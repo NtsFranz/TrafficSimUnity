@@ -1,6 +1,5 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using UnityEditor.Experimental.UIElements;
 using UnityEngine;
 
 public class Car : MonoBehaviour
@@ -75,23 +74,11 @@ public class Car : MonoBehaviour
 		#region DRIVE
 
 		// set goal speeds
-
-//		if (forwardHit.distance > freeDistance)
-//		{
-//			goalSpeed = maxSpeed;
-//		}
-//		else if (forwardHit.distance < cautionDistance && forwardHit.distance > stopDistance)
-//		{
-//			goalSpeed = maxSpeed / 2;
-//		}
-//		else if (forwardHit.distance < stopDistance)
-//		{
-//			goalSpeed = 0f;
-//		}
-		
-		//goalSpeed = map(0, freeDistance, 0, maxSpeed, forwardHit.distance);
-		goalSpeed = forwardHit.distance/2;
-		Debug.Log(forwardHit.distance);
+		goalSpeed = map(0, freeDistance, 0, maxSpeed, forwardHit.distance);
+		if (forwardLeftHit.distance < cautionDistance || forwardRightHit.distance < cautionDistance)
+		{
+			goalSpeed = 0;
+		}
 
 
 		// accelerate
@@ -119,7 +106,7 @@ public class Car : MonoBehaviour
 		}
 
 		// remove sideways motion
-		rb.velocity -= transform.InverseTransformDirection(rb.velocity);
+		rb.velocity -= Vector3.Project(rb.velocity, transform.right);
 
 		#endregion DRIVE
 
@@ -183,7 +170,7 @@ public class Car : MonoBehaviour
 	{
 		input -= in_low;
 		input /= (in_high - in_low);
-		input *= -(out_high - out_low);
+		input *= (out_high - out_low);
 		input += out_low;
 		input = Mathf.Clamp(input, out_low, out_high);
 		return input;
