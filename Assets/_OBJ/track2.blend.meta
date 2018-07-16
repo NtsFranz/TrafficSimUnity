@@ -9,12 +9,14 @@ ModelImporter:
     100006: back_wheels
     100008: car_body
     100010: front_wheels
+    100012: track
     400000: BezierCurve
     400002: Plane
     400004: //RootNode
     400006: back_wheels
     400008: car_body
     400010: front_wheels
+    400012: track
     2100000: unnamed
     2100002: car_body
     2100004: car_wheel_rubber
@@ -24,21 +26,25 @@ ModelImporter:
     2300004: back_wheels
     2300006: car_body
     2300008: front_wheels
+    2300010: track
     3300000: BezierCurve
     3300002: Plane
     3300004: back_wheels
     3300006: car_body
     3300008: front_wheels
+    3300010: track
     4300000: BezierCurve
     4300002: Plane
     4300004: car_body
     4300006: front_wheels
     4300008: back_wheels
+    4300010: track
     6400000: BezierCurve
     6400002: Plane
     6400004: back_wheels
     6400006: car_body
     6400008: front_wheels
+    6400010: track
     7400000: Default Take
     9500000: //RootNode
     2186277476908879412: ImportLogs
