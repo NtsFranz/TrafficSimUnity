@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 
 public class Car : MonoBehaviour
@@ -19,7 +20,7 @@ public class Car : MonoBehaviour
 	public float decceleration = 1f;
 	public float maxSpeed = 10f;
 	public float turningSpeed;
-	public float goalSpeed = 0f;
+	public float goalSpeed;
 
 	[Header("Components")] public MeshRenderer carBodyRenderer;
 	private Material carBodyMaterial;
@@ -32,9 +33,23 @@ public class Car : MonoBehaviour
 
 	private Rigidbody rb;
 	private GameObject lineRendererParent;
-	private LineRenderer forwardLine;
-	private LineRenderer forwardLeftLine;
-	private LineRenderer forwardRightLine;
+	private LineRenderer[] lines = new LineRenderer[5];
+
+	[HideInInspector] public GameObject touching;
+	[HideInInspector] public float maxRayDistance = 5f;
+	[HideInInspector] public RaycastHit[] rayHits = new RaycastHit[5];
+
+	[HideInInspector] public List<Vector3> path = new List<Vector3>();
+	[HideInInspector] public float distTraveled;
+	private int numRays = 5;
+	private Ray[] rays = new Ray[5];
+
+	/// <summary>
+	/// The forward speed of the car
+	/// </summary>
+	[HideInInspector] public float speed;
+
+	public bool manualControl;
 
 	// Use this for initialization
 	void Start()
@@ -47,122 +62,112 @@ public class Car : MonoBehaviour
 	// Update is called once per frame
 	void Update()
 	{
-		// check surroundings with raycasts
-		Ray forwardRay =
-			new Ray(
-				transform.position + ((transform.up * rayHeight) + (transform.forward * (carDim.y / 2))) * transform.localScale.x,
-				transform.forward);
-		Ray forwardLeftRay = new Ray(
-			transform.position +
-			((transform.up * rayHeight) + (-transform.right * horizontalForwardRayDistance) +
-			 (transform.forward * (carDim.y / 2))) * transform.localScale.x,
-			Quaternion.AngleAxis(-sideRayAngle, transform.up) * transform.forward);
-		Ray forwardRightRay = new Ray(
-			transform.position +
-			((transform.up * rayHeight) + (transform.right * horizontalForwardRayDistance) +
-			 (transform.forward * (carDim.y / 2))) * transform.localScale.x,
-			Quaternion.AngleAxis(sideRayAngle, transform.up) * transform.forward);
+		speed = rb.velocity.magnitude;
 
-		RaycastHit forwardHit;
-		RaycastHit forwardLeftHit;
-		RaycastHit forwardRightHit;
-		Physics.Raycast(forwardRay, out forwardHit);
-		Physics.Raycast(forwardLeftRay, out forwardLeftHit);
-		Physics.Raycast(forwardRightRay, out forwardRightHit);
+		if (manualControl)
+		{
+			if (Input.GetKey(KeyCode.W))
+			{
+				Accelerate(1);
+			}
 
+			if (Input.GetKey(KeyCode.S))
+			{
+				Accelerate(-1);
+			}
 
-		#region DRIVE
+			if (Input.GetKey(KeyCode.A))
+			{
+				Turn(-1);
+			}
+
+			if (Input.GetKey(KeyCode.D))
+			{
+				Turn(1);
+			}
+		}
+		
+		//CastRays();
 
 		// set goal speeds
-		goalSpeed = map(0, freeDistance, 0, maxSpeed, forwardHit.distance);
-		if (forwardLeftHit.distance < cautionDistance || forwardRightHit.distance < cautionDistance)
+		/*goalSpeed = map(0, freeDistance, 0, maxSpeed, rayHits[0].distance);
+		if (rayHits[1].distance < cautionDistance || rayHits[2].distance < cautionDistance)
 		{
 			goalSpeed = 0;
-		}
+		}*/
 
 
 		// accelerate
-		if (rb.velocity.magnitude < goalSpeed)
+		/*if (rb.velocity.magnitude < goalSpeed)
 		{
-			rb.AddForce(acceleration * rb.mass * transform.forward * Time.deltaTime);
-			carBodyMaterial.color = Color.green;
+			Accelerate(1);
 		}
 		// deccelerate
 		else if (rb.velocity.magnitude > goalSpeed)
 		{
-			rb.AddForce(decceleration * rb.mass * -transform.forward * Time.deltaTime);
-			carBodyMaterial.color = Color.red;
+			Accelerate(-1);
 		}
 
 
 		// turn
-		if (forwardLeftHit.distance > forwardRightHit.distance)
+		if (rayHits[1].distance > rayHits[2].distance)
 		{
-			rb.AddTorque(-turningSpeed * transform.up * Time.deltaTime);
+			Turn(-1);
 		}
 		else
 		{
-			rb.AddTorque(turningSpeed * transform.up * Time.deltaTime);
-		}
+			Turn(1);
+		}*/
 
 		// remove sideways motion
 		rb.velocity -= Vector3.Project(rb.velocity, transform.right);
 
-		#endregion DRIVE
+
+		path.Add(transform.position);
+		if (path.Count > 1)
+			distTraveled += Vector3.Distance(path[path.Count - 2], path[path.Count - 1]);
 
 
 		// draw rays
 		if (visualizeRays)
 		{
-			if (lineRendererParent == null)
-			{
-				lineRendererParent = new GameObject("LineRenderers");
-				lineRendererParent.transform.SetParent(transform);
-			}
+			DrawRays();
+		}
+	}
 
-			if (forwardLine == null)
-			{
-				GameObject g = new GameObject();
-				g.transform.SetParent(lineRendererParent.transform);
-				forwardLine = g.AddComponent<LineRenderer>();
-				forwardLine.material.color = Color.white;
-				forwardLine.material.shader = Shader.Find("Unlit/Color");
-				forwardLine.positionCount = 2;
-				forwardLine.widthMultiplier = lineWidth;
-			}
+	void DrawRays()
+	{
+		if (lineRendererParent == null)
+		{
+			lineRendererParent = new GameObject("LineRenderers");
+			lineRendererParent.transform.SetParent(transform);
+			lineRendererParent.transform.localEulerAngles = Vector3.zero;
+			lineRendererParent.transform.localPosition = Vector3.zero;
+		}
 
-			if (forwardLeftLine == null)
-			{
-				GameObject g = new GameObject();
-				g.transform.SetParent(lineRendererParent.transform);
-				forwardLeftLine = g.AddComponent<LineRenderer>();
-				forwardLeftLine.material.color = Color.red;
-				forwardLeftLine.material.shader = Shader.Find("Unlit/Color");
-				forwardLeftLine.positionCount = 2;
-				forwardLeftLine.widthMultiplier = lineWidth;
-			}
+		Color[] colors = {Color.white, Color.red, Color.black, Color.green, Color.yellow};
 
-			if (forwardRightLine == null)
+		for (int i = 0; i < numRays; i++)
+		{
+			if (lines[i] == null)
 			{
 				GameObject g = new GameObject();
 				g.transform.SetParent(lineRendererParent.transform);
-				forwardRightLine = g.AddComponent<LineRenderer>();
-				forwardRightLine.material.color = Color.black;
-				forwardRightLine.material.shader = Shader.Find("Unlit/Color");
-				forwardRightLine.positionCount = 2;
-				forwardRightLine.widthMultiplier = lineWidth;
+				lines[i] = g.AddComponent<LineRenderer>();
+				lines[i].material.color = colors[i];
+				lines[i].material.shader = Shader.Find("Unlit/Color");
+				lines[i].positionCount = 2;
+				lines[i].widthMultiplier = lineWidth;
 			}
 
-			forwardLine.SetPositions(new[] {forwardRay.origin, forwardHit.point});
-			forwardLeftLine.SetPositions(new[] {forwardLeftRay.origin, forwardLeftHit.point});
-			forwardRightLine.SetPositions(new[] {forwardRightRay.origin, forwardRightHit.point});
+			lines[i].SetPositions(new[] {rays[i].origin, rayHits[i].point});
 		}
 	}
 
 	void UpdateCarDimensions()
 	{
-		BoxCollider collider = GetComponentInChildren<BoxCollider>();
-		carDim = collider.size;
+		BoxCollider c = GetComponentInChildren<BoxCollider>();
+		carDim = c.size;
 	}
 
 	// maps and clamps
@@ -176,4 +181,99 @@ public class Car : MonoBehaviour
 		return input;
 	}
 
+	private void OnCollisionEnter(Collision other)
+	{
+		touching = other.gameObject;
+		Debug.Log(other.gameObject.name);
+	}
+
+	private void OnCollisionExit(Collision other)
+	{
+		if (touching == other.gameObject)
+		{
+			touching = null;
+			Debug.Log("Exit: " + other.gameObject.name);
+		}
+
+		
+	}
+
+
+	/// <summary>
+	/// Rotate the car according to val
+	/// </summary>
+	/// <param name="amount">Value between -1 and 1. Negative is left and positive is right.</param>
+	public void Turn(float amount)
+	{
+		rb.AddTorque(amount * turningSpeed * transform.up * Time.deltaTime);
+	}
+
+	/// <summary>
+	/// Speed up or slow down according to input val
+	/// </summary>
+	/// <param name="amount">The amount to slow down or speed up. Between -1 and 1.</param>
+	public void Accelerate(float amount)
+	{
+		if (amount > 0)
+		{
+			rb.AddForce(amount * acceleration * rb.mass * transform.forward * Time.deltaTime);
+		}
+		else
+		{
+			rb.AddForce(amount * decceleration * rb.mass * transform.forward * Time.deltaTime);
+		}
+
+		carBodyMaterial.color = Color.Lerp(Color.red, Color.green, (amount + 1) / 2);
+	}
+
+	public void ResetCar()
+	{
+		distTraveled = 0;
+		path = new List<Vector3>();
+		path.Add(transform.position);
+		rb.velocity = Vector3.zero;
+		rb.angularVelocity = Vector3.zero;
+		carBodyMaterial.color = Color.white;
+	}
+
+	public void CastRays()
+	{
+		// check surroundings with raycasts
+		// future optimization: only define rays once as coming from origin, then offset every frame
+		Ray forwardRay =
+			new Ray(
+				transform.position + ((transform.up * rayHeight) + (transform.forward * (carDim.y / 2))) * transform.localScale.x,
+				transform.forward);
+		rays[0] = (forwardRay);
+		Ray forwardLeftRay = new Ray(
+			transform.position +
+			((transform.up * rayHeight) + (-transform.right * horizontalForwardRayDistance) +
+			 (transform.forward * (carDim.y / 2))) * transform.localScale.x,
+			Quaternion.AngleAxis(-sideRayAngle, transform.up) * transform.forward);
+		rays[1] = (forwardLeftRay);
+		Ray forwardRightRay = new Ray(
+			transform.position +
+			((transform.up * rayHeight) + (transform.right * horizontalForwardRayDistance) +
+			 (transform.forward * (carDim.y / 2))) * transform.localScale.x,
+			Quaternion.AngleAxis(sideRayAngle, transform.up) * transform.forward);
+		rays[2] = (forwardRightRay);
+		Ray leftRay =
+			new Ray(
+				transform.position + ((transform.up * rayHeight) + (-transform.right * (carDim.x / 2))) * transform.localScale.x,
+				-transform.right);
+		rays[3] = (leftRay);
+		Ray rightRay =
+			new Ray(
+				transform.position + ((transform.up * rayHeight) + (transform.right * (carDim.x / 2))) * transform.localScale.x,
+				transform.right);
+		rays[4] = (rightRay);
+
+		rayHits = new RaycastHit[numRays];
+
+
+		for (int i = 0; i < numRays; i++)
+		{
+			Physics.Raycast(rays[i], out rayHits[i]);
+		}
+	}
 }

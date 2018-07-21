@@ -37,3 +37,5 @@ sysinfo.txt
 *.unitypackage
 
 *.blend1
+
+Assets/ML-Agents/Examples/

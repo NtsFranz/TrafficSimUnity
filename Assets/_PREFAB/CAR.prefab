@@ -73,6 +73,7 @@ GameObject:
   - component: {fileID: 4258268990487540}
   - component: {fileID: 54121084063045340}
   - component: {fileID: 114096610948085442}
+  - component: {fileID: 114234921997510358}
   m_Layer: 0
   m_Name: CAR
   m_TagString: Untagged
@@ -87,7 +88,7 @@ Transform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1850693913702842}
   m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: -0.07460067, y: -3.6525364e-17, z: 1.6449561}
+  m_LocalPosition: {x: -0.07460067, y: 0.0162, z: 1.6449561}
   m_LocalScale: {x: 0.1, y: 0.1, z: 0.1}
   m_Children:
   - {fileID: 4742656589322984}
@@ -304,7 +305,7 @@ MonoBehaviour:
   visualizeRays: 1
   lineWidth: 0.01
   sideRayAngle: 45
-  rayHeight: 0.2
+  rayHeight: 0.4
   horizontalForwardRayDistance: 0.9
   acceleration: 50
   decceleration: 5
@@ -316,3 +317,29 @@ MonoBehaviour:
   freeDistance: 4
   cautionDistance: 0.1
   stopDistance: 0.1
+  touching: {fileID: 0}
+  maxRayDistance: 5
+  path: []
+  distTraveled: 0
+  speed: 0
+  manualControl: 0
+--- !u!114 &114234921997510358
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1850693913702842}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ebc13afc929501344b6a4c99e82961d4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  brain: {fileID: 0}
+  agentParameters:
+    agentCameras: []
+    maxStep: 0
+    resetOnDone: 1
+    onDemandDecision: 0
+    numberOfActionsBetweenDecisions: 1
+  startPoint: {fileID: 0}
+  car: {fileID: 114096610948085442}
